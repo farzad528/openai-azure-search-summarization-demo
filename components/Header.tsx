@@ -5,7 +5,7 @@ type Props = {};
 
 export default function Header({}: Props) {
   return (
-    <header className="flex justify-between items-center w-full mt-2 border-b-2 pb-3">
+    <header className="flex justify-between items-center w-full bg-white border-b-2 pb-7">
       <Link href="/" className="flex space-x-3">
         <Image
           alt="azs icon"
