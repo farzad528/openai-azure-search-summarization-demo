@@ -19,7 +19,7 @@ export default function Home() {
       ? `Generate 2 summaries explained at a toddler level of the summary clearly labeled "1." and "2.". Make sure there is no complicated vocabulary and it is simple and concise to understand. Make sure each generated summary is at max 20 words and base it on this context: ${summary}${
           summary.slice(-1) === "." ? "" : "."
         }`
-      : `Generate 2 ${expertise} twitter summarys with no hashtags and clearly labeled "1." and "2.". Make sure each generated summary is at least 20 words and at max 500 words and base them on this context: ${summary}${
+      : `Generate 2 ${expertise} summarys with no hashtags and clearly labeled "1." and "2.". Make sure each generated summary is at least 20 words and at max 500 words and base them on this context: ${summary}${
           summary.slice(-1) === "." ? "" : "."
         }`;
 
@@ -27,38 +27,24 @@ export default function Home() {
     e.preventDefault();
     setGeneratedSummaries("");
     setLoading(true);
+
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "api-key": `${process.env.OPENAI_API_KEY ?? ""}`,
       },
       body: JSON.stringify({
         prompt,
       }),
     });
-    console.log("Edge function returned.");
 
     if (!response.ok) {
       throw new Error(response.statusText);
     }
 
-    // This data is a ReadableStream
-    const data = response.body;
-    if (!data) {
-      return;
-    }
-
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      const chunkValue = decoder.decode(value);
-      setGeneratedSummaries((prev) => prev + chunkValue);
-    }
-
+    let answer = await response.json();
+    setGeneratedSummaries(answer.choices[0].text);
     setLoading(false);
   };
 
@@ -73,7 +59,7 @@ export default function Home() {
 
         <main>
           <h1 className="text-4xl max-w-2xl font-bold text-slate-900">
-            Generate instance answers over your index
+            Generate instant summaries at any level for your docs
           </h1>
           <div className="flex w-full justify-between items-center mt-2">
             <div className="bg-gray-100 w-1/2">search cards here</div>
@@ -121,6 +107,38 @@ export default function Home() {
                 </button>
               )}
             </div>
+          </div>
+          <div className="space-y-10 my-10">
+            {generatedSummaries && (
+              <>
+                <div>
+                  <h2 className="sm:text-4xl text-3xl font-bold text-slate-900 mx-auto">
+                    Your generated summaries
+                  </h2>
+                </div>
+                <div className="space-y-8 flex flex-col items-center justify-center max-w-xl mx-auto">
+                  {generatedSummaries
+                    .substring(generatedSummaries.indexOf("1") + 3)
+                    .split("2.")
+                    .map((generatedSummary) => {
+                      return (
+                        <div
+                          className="bg-white rounded-xl shadow-md p-4 hover:bg-gray-100 transition cursor-copy border"
+                          // onClick={() => {
+                          //   navigator.clipboard.writeText(generatedSummary);
+                          //   toast("Bio copied to clipboard", {
+                          //     icon: "✂️",
+                          //   });
+                          // }}
+                          key={generatedSummary}
+                        >
+                          <p>{generatedSummary}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
