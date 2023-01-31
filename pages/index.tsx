@@ -16,10 +16,10 @@ export default function Home() {
 
   const prompt =
     expertise === "Toddler"
-      ? `Generate 2 summaries explained at a toddler level of the summary clearly labeled "1." and "2.". Make sure there is no complicated vocabulary and it is simple and concise to understand. Make sure each generated summary is at max 20 words and base it on this context: ${summary}${
+      ? `Generate 2 summaries explained at a toddler comprehension level clearly labeled "1." and "2.". Make sure each generated summary is at max 20 words and base it on this context: ${summary}${
           summary.slice(-1) === "." ? "" : "."
         }`
-      : `Generate 2 ${expertise} summarys with no hashtags and clearly labeled "1." and "2.". Make sure each generated summary is at least 20 words and at max 500 words and base them on this context: ${summary}${
+      : `Generate 2 summaries explained at a ${expertise} comprehension level clearly labeled "1." and "2.". Make sure each generated summary is at least 20 words and at max 500 words and base them on this context: ${summary}${
           summary.slice(-1) === "." ? "" : "."
         }`;
 
@@ -76,7 +76,7 @@ export default function Home() {
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 rows={4}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5"
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5 px-3 py-2"
                 placeholder={"e.g. this is an example prompt to enter"}
               />
               <div className="flex mb-5 items-center space-x-3">
