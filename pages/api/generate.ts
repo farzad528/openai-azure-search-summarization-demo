@@ -16,10 +16,10 @@ export default async function handler(
 
   const payload = {
     prompt,
-    temperature: 1,
+    temperature: 0.7,
     frequency_penalty: 0,
     presence_penalty: 0,
-    max_tokens: 1000,
+    max_tokens: 2000,
   };
 
   const response = await fetch(
