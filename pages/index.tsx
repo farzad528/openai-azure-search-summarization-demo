@@ -7,6 +7,7 @@ import Dropdown, { ExpertiseType } from "../components/Dropdown";
 import LoadingDots from "@/components/LoadingDots";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/20/solid";
 import { PacmanLoader } from "react-spinners";
+import { AnimatePresence, motion } from "framer-motion";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,14 +33,7 @@ export default function Home() {
   const [expertise, setExpertise] = useState<ExpertiseType>("Expert");
   const [generatedSummaries, setGeneratedSummaries] = useState<String>("");
 
-  const prompt =
-    expertise === "Toddler"
-      ? `Generate 2 summaries explained at a toddler comprehension level clearly labeled "1." and "2.". Make sure each generated summary is at max 20 words and base it on this context: ${summary}${
-          summary.slice(-1) === "." ? "" : "."
-        }`
-      : `Generate 2 summaries explained at a ${expertise} comprehension level clearly labeled "1." and "2.". Make sure each generated summary is at least 20 words and at max 100 words and base them on this context: ${summary}${
-          summary.slice(-1) === "." ? "" : "."
-        }`;
+  const prompt = `Summarize the text below as a bullet point list of the most important points. Please use langague at a ${expertise} level: """${summary}"""`;
 
   const search = searchQuery;
 
@@ -92,19 +86,33 @@ export default function Home() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api-key": `${process.env.OPENAI_API_KEY ?? ""}`,
       },
       body: JSON.stringify({
         prompt,
       }),
     });
+    console.log("Edge function returned.");
 
     if (!response.ok) {
       throw new Error(response.statusText);
     }
 
-    let answer = await response.json();
-    setGeneratedSummaries(answer.choices[0].text);
+    // This data is a ReadableStream
+    const data = response.body;
+    if (!data) {
+      return;
+    }
+
+    const reader = data.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      const chunkValue = decoder.decode(value);
+      setGeneratedSummaries((prev) => prev + chunkValue);
+    }
     setSummaryLoading(false);
   };
 
@@ -215,42 +223,44 @@ export default function Home() {
                   disabled
                 >
                   {/* <LoadingDots color="white" style="large" /> */}
-                  <PacmanLoader color="yellow"  />
+                  <PacmanLoader color="yellow" />
                 </button>
               )}
             </div>
           </div>
-          <div className="space-y-10 my-10">
-            {generatedSummaries && (
-              <>
-                <div>
-                  <h2 className="sm:text-4xl text-3xl font-bold text-slate-900 mx-auto">
-                    Your generated summaries
-                  </h2>
+          <div>
+            <AnimatePresence mode="wait">
+              <motion.div className="space-y-10 my-10">
+                <div className="space-y-10 my-10">
+                  {generatedSummaries && (
+                    <>
+                      <div>
+                        <h2 className="sm:text-4xl text-3xl font-bold text-slate-900 mx-auto">
+                          Your generated summaries
+                        </h2>
+                      </div>
+                      <div className="space-y-8 flex flex-col items-center justify-center max-w-xl mx-auto">
+                        {generatedSummaries && (
+                          <div className="mx-10">
+                            <div>
+                              <div className="bg-white shadow-md rounded-xl py-2 px-6 mt-2">
+                                <ul>
+                                  {generatedSummaries
+                                    .split("-")
+                                    .map((summary, index) => (
+                                      <li key={index}>{summary}</li>
+                                    ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="space-y-8 flex flex-col items-center justify-center max-w-xl mx-auto">
-                  {generatedSummaries
-                    .substring(generatedSummaries.indexOf("1") + 3)
-                    .split("2.")
-                    .map((generatedSummary) => {
-                      return (
-                        <div
-                          className="bg-white rounded-xl shadow-md p-4 hover:bg-gray-100 transition cursor-copy border"
-                          // onClick={() => {
-                          //   navigator.clipboard.writeText(generatedSummary);
-                          //   toast("Bio copied to clipboard", {
-                          //     icon: "✂️",
-                          //   });
-                          // }}
-                          key={generatedSummary}
-                        >
-                          <p>{generatedSummary}</p>
-                        </div>
-                      );
-                    })}
-                </div>
-              </>
-            )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>

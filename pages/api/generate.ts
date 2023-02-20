@@ -1,42 +1,36 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { OpenAIStream, OpenAIStreamPayload } from "@/utils/AzureOpenAIStream";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing env var from OpenAI");
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { prompt } = req.body;
+export const config = {
+  runtime: "edge",
+};
+
+const handler = async (req: Request): Promise<Response> => {
+  const { prompt } = (await req.json()) as {
+    prompt?: string;
+  };
 
   if (!prompt) {
     return new Response("No prompt in the request", { status: 400 });
   }
 
-  const payload = {
+  const payload: OpenAIStreamPayload = {
+    model: "chatdavinci2",
     prompt,
     temperature: 0.7,
+    top_p: 1,
     frequency_penalty: 0,
     presence_penalty: 0,
-    max_tokens: 2000,
+    max_tokens: 500,
+    stream: true,
+    n: 1,
   };
 
-  const response = await fetch(
-    `https://${process.env.OPENAI_SERVICE_NAME}.openai.azure.com/openai/deployments/${process.env.DEPLOYMENT_NAME}/completions?api-version=2022-12-01`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": `${process.env.OPENAI_API_KEY ?? ""}`,
-      },
-      method: "POST",
-      body: JSON.stringify(payload),
-    }
-  );
+  const stream = await OpenAIStream(payload);
+  return new Response(stream);
+};
 
-  const json = await response.json();
-
-  console.log(response);
-
-  res.status(200).json(json);
-}
+export default handler;
